@@ -1,0 +1,9 @@
+CREATE DATABASE IF NOT EXISTS ai_s3_curd;
+USE ai_s3_curd;
+
+CREATE TABLE IF NOT EXISTS s3_objects (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    object_key VARCHAR(255) UNIQUE NOT NULL,
+    size BIGINT,
+    ai_result VARCHAR(255)
+);
