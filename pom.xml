@@ -4,7 +4,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.ai.aws.s3</groupId>
-	<artifactId>ai_aws_s3_crud_python_java_app</artifactId>
+	<artifactId>ai_aws_s3_crud_python_java_mysql_app</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
