@@ -1,67 +1,29 @@
-import pymysql
-import random
-import os
-from dotenv import load_dotenv
+import boto3
+from PIL import Image
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions, MobileNetV2
 
-# Load environment variables from .env (optional if you want to configure DB via env)
-load_dotenv()
+model = MobileNetV2(weights='imagenet')  # Load AI model
 
-# MySQL configuration
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_USER = os.getenv('DB_USER', 'root')
-DB_PASSWORD = os.getenv('DB_PASSWORD', 'admin')
-DB_NAME = os.getenv('DB_NAME', 'ai_s3_curd')
+s3 = boto3.client('s3')
+bucket_name = 'your-bucket-name'
 
-# Connect to MySQL
-def get_connection():
-    return pymysql.connect(
-        host=DB_HOST,
-        user=DB_USER,
-        password=DB_PASSWORD,
-        database=DB_NAME,
-        charset='utf8mb4',
-        cursorclass=pymysql.cursors.DictCursor
-    )
+def analyze_file(file_key):
+    if not file_key.lower().endswith(('.jpg', '.jpeg', '.png')):
+        return "Non-image file"
 
-# Mock AI analysis function
-def perform_ai_analysis(object_key):
-    """
-    Simulate AI analysis. Replace this with real AI model inference.
-    """
-    labels = ['Safe', 'Adult Content', 'Violence', 'Sensitive', 'Normal']
-    return random.choice(labels)
+    # Download file temporarily
+    tmp_file = f"/tmp/{file_key.split('/')[-1]}"
+    s3.download_file(bucket_name, file_key, tmp_file)
 
-def analyze_s3_objects():
     try:
-        with get_connection() as conn:
-            with conn.cursor() as cur:
-                # Fetch all S3 objects
-                cur.execute("SELECT id, object_key FROM s3_objects")
-                objects = cur.fetchall()
-
-                if not objects:
-                    print("No objects found in database.")
-                    return
-
-                for obj in objects:
-                    object_id = obj['id']
-                    object_key = obj['object_key']
-
-                    # Perform mock AI analysis
-                    result = perform_ai_analysis(object_key)
-
-                    # Update the ai_result field
-                    cur.execute(
-                        "UPDATE s3_objects SET ai_result=%s WHERE id=%s",
-                        (result, object_id)
-                    )
-                    print(f"Updated AI result for {object_key}: {result}")
-
-            conn.commit()
-            print("All AI analysis results updated successfully.")
-
-    except pymysql.MySQLError as e:
-        print(f"MySQL Error: {e}")
-
-if __name__ == "__main__":
-    analyze_s3_objects()
+        image = Image.open(tmp_file).resize((224, 224))
+        img_array = np.array(image.convert('RGB'))
+        img_batch = np.expand_dims(img_array, axis=0)
+        img_preprocessed = preprocess_input(img_batch)
+        prediction = model.predict(img_preprocessed)
+        decoded = decode_predictions(prediction, top=1)[0][0]
+        return f"{decoded[1]} ({decoded[2]*100:.2f}%)"
+    except Exception as e:
+        return f"AI error: {str(e)}"
