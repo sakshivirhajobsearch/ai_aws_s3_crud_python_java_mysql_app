@@ -12,6 +12,8 @@ import com.ai.aws.s3.model.S3ObjectRecord;
 import com.ai.aws.s3.repository.S3Repository;
 
 public class S3GUI extends JFrame {
+	
+	private static final long serialVersionUID = 1L;
 
 	public S3GUI() {
 		setTitle("S3 Object Viewer with AI");
